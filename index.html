@@ -308,14 +308,18 @@ function spinner(){ sentinel.className='loader'; sentinel.innerHTML='<span class
 function sentinelNear(){ if(!sentinel.isConnected) return false; return sentinel.getBoundingClientRect().top < innerHeight+1100; }
 const keyOf=c=>c+'|'+SORTS[sortIdx];
 function nextSource(){ for(let k=0;k<SOURCES.length;k++){ const cand=SOURCES[(si+k)%SOURCES.length]; if(!dry.has(keyOf(cand))){ si=(si+k+1)%SOURCES.length; return cand; } } return null; }
-let _lastReq=0;
+let _lastReq=0, rateHits=0;
 async function grab(url){
-  const gap=Date.now()-_lastReq; if(gap<340) await new Promise(r=>setTimeout(r,340-gap)); _lastReq=Date.now();
+  const gap=Date.now()-_lastReq; if(gap<500) await new Promise(r=>setTimeout(r,500-gap)); _lastReq=Date.now();
   try{ const r=await fetch(url,{cache:'no-store'});
-    if(r.status===503||r.status===429){ await new Promise(r=>setTimeout(r,900)); return null; }
+    if(r.status===503||r.status===429) return 'RATE';
     if(!r.ok) return null;
     return (await r.json()).posts||[];
   }catch(e){ return null; }
+}
+function backoff(key){ rateHits++; if(key&&pageOf[key]) pageOf[key]--;
+  if(rateHits>10){ rateHits=0; sentinel.classList.add('err'); sentinel.innerHTML='Servers busy \u2014 <b onclick="retry()">retry</b>'; window.retry=()=>{ spinner(); loading=false; loadMore(); }; loading=false; return; }
+  setTimeout(()=>{ loading=false; loadMore(); }, 1300);
 }
 async function loadMore(){
   if(loading||mode==='saved') return; loading=true;
@@ -324,7 +328,9 @@ async function loadMore(){
       let c=nextSource();
       if(!c){ sortIdx++; if(sortIdx>=SORTS.length){ sortIdx=0; seen.clear(); } dry.clear(); loading=false; return loadMore(); }
       const sort=SORTS[sortIdx], key=keyOf(c), pg=pageOf[key]=(pageOf[key]||0)+1;
-      const posts=await grab(`${INSTANCE}/api/v3/post/list?community_name=${c}&sort=${sort}&limit=30&page=${pg}&t=${Date.now()}`);
+      const posts=await grab(`${INSTANCE}/api/v3/post/list?community_name=${c}&sort=${sort}&limit=20&page=${pg}&t=${Date.now()}`);
+      if(posts==='RATE') return backoff(key);
+      rateHits=0;
       if(!posts||!posts.length){ dry.add(key); loading=false; return loadMore(); }
       shuffle(posts); let added=0;
       for(const {post:p,community:cm} of posts){ const it=itemOf(p,cm); if(!it||seen.has(it.id)) continue; seen.add(it.id); container.insertBefore(card(it),sentinel); added++; }
@@ -332,11 +338,14 @@ async function loadMore(){
     } else {
       if(sDone){ loading=false; return; }
       let posts;
-      if(query){ posts=await grab(`${INSTANCE}/api/v3/search?q=${encodeURIComponent(query)}&type_=Posts&listing_type=All&sort=TopAll&limit=30&page=${sPage}&t=${Date.now()}`); sPage++;
+      if(query){ posts=await grab(`${INSTANCE}/api/v3/search?q=${encodeURIComponent(query)}&type_=Posts&listing_type=All&sort=TopAll&limit=20&page=${sPage}&t=${Date.now()}`);
+        if(posts==='RATE') return backoff(null); sPage++;
         if(!posts||!posts.length){ sDone=true; sentinel.textContent='End of results'; loading=false; return; } }
       else { const c=SOURCES[Math.floor(Math.random()*SOURCES.length)]; const key='x|'+c; const pg=pageOf[key]=(pageOf[key]||0)+1;
-        posts=await grab(`${INSTANCE}/api/v3/post/list?community_name=${c}&sort=TopMonth&limit=30&page=${pg}&t=${Date.now()}`);
+        posts=await grab(`${INSTANCE}/api/v3/post/list?community_name=${c}&sort=TopMonth&limit=20&page=${pg}&t=${Date.now()}`);
+        if(posts==='RATE') return backoff(key);
         if(!posts||!posts.length){ loading=false; return loadMore(); } }
+      rateHits=0;
       shuffle(posts); let added=0;
       for(const {post:p,community:cm} of posts){ const it=itemOf(p,cm); if(!it||seen.has(it.id)) continue; seen.add(it.id); container.insertBefore(tile(it),sentinel); added++; }
       if(!added){ loading=false; return loadMore(); }
