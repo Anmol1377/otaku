@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#09080e">
+<title>OTAKU</title>
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="OTAKU">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&family=Baloo+2:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  :root{ /* light */
+    --bg:#edecf7; --surface:#ffffff; --fg:#1b1a24; --muted:#73717f; --line:rgba(20,15,45,.08);
+    --accent:#7c6cf6; --ink:#1b1a24;
+    --pill:rgba(255,255,255,.66); --pill-bd:rgba(124,108,246,.30);
+  }
+  body.dark{
+    --bg:#09080e; --surface:#16141f; --fg:#f2f0f8; --muted:#8e8c99; --line:rgba(255,255,255,.1);
+    --accent:#8f80ff; --ink:#f2f0f8;
+    --pill:rgba(23,21,32,.62); --pill-bd:rgba(143,128,255,.32);
+  }
+  body.gaming{ --accent:#12cf8f; }
+  .top .uni{ display:flex; gap:2px; padding:3px; border-radius:999px; background:rgba(128,120,160,.16); }
+  .useg{ border:0; background:none; cursor:pointer; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:13px; letter-spacing:.4px; color:var(--muted); padding:6px 14px; border-radius:999px; transition:.2s; }
+  .useg.on{ background:var(--accent); color:#fff; }
+  .top.small .useg{ padding:5px 11px; font-size:12px; }
+  *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  body{ background:var(--bg); color:var(--fg); overscroll-behavior-y:none; transition:background .3s,color .3s;
+    font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif; }
+
+  /* floating brand pill */
+  .top{ position:fixed; top:calc(10px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%);
+    z-index:25; display:flex; align-items:center; gap:7px; padding:9px 20px; border-radius:999px;
+    background:var(--pill); border:1px solid var(--pill-bd);
+    -webkit-backdrop-filter:blur(18px) saturate(1.5); backdrop-filter:blur(18px) saturate(1.5);
+    box-shadow:0 10px 30px rgba(55,38,120,.22); transition:padding .25s,transform .25s,opacity .25s; }
+  .top.small{ padding:6px 14px; transform:translateX(-50%) scale(.86); opacity:.92; }
+  .top .mark{ font-family:'Baloo 2','Space Grotesk',sans-serif; font-weight:800; font-size:21px; letter-spacing:.5px; color:var(--fg); transition:font-size .25s; }
+  .top .mark::after{ content:'\2726'; color:var(--accent); font-size:.6em; vertical-align:top; margin-left:3px; }
+  .top .kana{ font-size:10px; font-weight:600; letter-spacing:1px; color:var(--accent); opacity:.95; margin-left:1px; transform:translateY(-6px); }
+  .top.small .mark{ font-size:17px; } .top.small .kana{ display:none; }
+  .top .logo{ filter:drop-shadow(0 2px 6px rgba(124,108,246,.5)); }
+
+  /* theme toggle (top-right floating) */
+  .theme{ position:fixed; top:calc(12px + env(safe-area-inset-top)); right:14px; z-index:26;
+    width:40px; height:40px; border-radius:50%; border:1px solid var(--pill-bd); cursor:pointer; color:var(--accent);
+    background:var(--pill); -webkit-backdrop-filter:blur(16px); backdrop-filter:blur(16px);
+    box-shadow:0 8px 22px rgba(55,38,120,.2); display:flex; align-items:center; justify-content:center; }
+
+  .wrap{ max-width:520px; margin:0 auto; padding:62px 0 112px; }
+  body.explore .wrap{ padding-top:0; }
+
+  /* search + chips */
+  .exhead{ position:sticky; top:0; z-index:16; background:var(--bg); padding:72px 12px 10px; border-bottom:1px solid var(--line); }
+  .exhead .box{ display:flex; align-items:center; gap:10px; height:48px; border-radius:16px;
+    background:var(--surface); border:1px solid var(--line); padding:0 15px; box-shadow:0 6px 18px rgba(20,15,50,.06); }
+  .exhead .box:focus-within{ border-color:var(--accent); box-shadow:0 0 0 3px rgba(124,108,246,.18); }
+  .exhead input{ flex:1; background:none; border:0; outline:none; color:var(--fg); font-size:15px; font-family:inherit; }
+  .exhead input::placeholder{ color:var(--muted); } .exhead .mg{ color:var(--muted); }
+  .chips{ display:flex; gap:8px; padding:12px 0 0; overflow-x:auto; scrollbar-width:none; }
+  .chips::-webkit-scrollbar{ display:none; }
+  .chip{ flex:none; font-size:13px; font-weight:600; color:var(--fg); padding:8px 15px; border-radius:999px;
+    background:var(--surface); border:1px solid var(--line); cursor:pointer; }
+  .chip.on{ background:var(--accent); border-color:transparent; color:#fff; }
+
+  /* immersive feed card — media dominates, actions float on it */
+  .post{ padding:0 10px 12px; }
+  .media{ position:relative; width:100%; border-radius:22px; overflow:hidden; background:#0b0a11;
+    box-shadow:0 14px 34px rgba(20,12,50,.22); }
+  .media img,.media video{ width:100%; max-height:84vh; min-height:200px; object-fit:cover; display:block; opacity:0; transition:opacity .4s; }
+  .media img.on,.media video.on{ opacity:1; }
+  .vbadge{ position:absolute; top:12px; left:12px; z-index:2; font-size:14px; background:rgba(0,0,0,.45);
+    border-radius:50%; width:34px; height:34px; display:flex; align-items:center; justify-content:center; color:#fff; backdrop-filter:blur(6px); }
+  .burst{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; z-index:4; }
+  .burst svg{ width:88px; height:88px; color:#fff; fill:#fff; opacity:0; transform:scale(.3); filter:drop-shadow(0 6px 22px rgba(0,0,0,.5)); }
+  .burst.go svg{ animation:pop .9s ease; }
+  @keyframes pop{ 0%{opacity:0;transform:scale(.3)} 18%{opacity:1;transform:scale(1.15)} 35%{transform:scale(.95)} 100%{opacity:0;transform:scale(1)} }
+  .overlay{ position:absolute; left:0; right:0; bottom:0; z-index:3; padding:46px 14px 14px;
+    display:flex; align-items:flex-end; gap:10px;
+    background:linear-gradient(to top,rgba(0,0,0,.72) 0%,rgba(0,0,0,.1) 70%,transparent); }
+  .overlay .cap{ flex:1; color:#fff; font-size:14px; line-height:1.4; text-shadow:0 1px 8px rgba(0,0,0,.6); }
+  .obtns{ display:flex; gap:9px; }
+  .ob{ width:44px; height:44px; border-radius:50%; background:rgba(0,0,0,.42); border:1px solid rgba(255,255,255,.22);
+    -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); color:#fff; font-size:18px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; }
+  .ob:active{ transform:scale(.9); } .ob.saved{ background:var(--accent); border-color:transparent; }
+  .ob.saved svg{ fill:currentColor; } .pv svg{ fill:currentColor; stroke:none; display:block; }
+
+  /* grid (explore/saved) */
+  .grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:8px; padding:6px 10px; }
+  .tile{ position:relative; aspect-ratio:1; border-radius:18px; overflow:hidden; background:var(--surface);
+    border:1px solid var(--line); cursor:pointer; box-shadow:0 8px 18px rgba(20,12,50,.1); }
+  .tile img{ width:100%; height:100%; object-fit:cover; opacity:0; transition:opacity .35s,transform .4s; }
+  .tile img.on{ opacity:1; } .tile:active img{ transform:scale(.96); }
+  .tile .pv{ position:absolute; top:8px; right:8px; font-size:12px; background:rgba(0,0,0,.55); color:#fff; padding:3px 7px; border-radius:8px; }
+
+  /* lightbox */
+  .lb{ position:fixed; inset:0; z-index:40; background:rgba(8,6,16,.6);
+    -webkit-backdrop-filter:blur(4px); backdrop-filter:blur(4px); display:none; align-items:flex-end; justify-content:center; }
+  .lb.on{ display:flex; }
+  .lb .sheet{ width:100%; max-width:520px; background:var(--surface); color:var(--fg); position:relative;
+    border-radius:26px 26px 0 0; padding:10px 20px calc(24px + env(safe-area-inset-bottom));
+    max-height:90vh; overflow-y:auto; transform:translateY(100%); transition:transform .32s cubic-bezier(.2,.8,.2,1); box-shadow:0 -10px 40px rgba(0,0,0,.4); }
+  .lb.on .sheet{ transform:translateY(0); }
+  .lb .grab{ width:42px; height:4px; border-radius:2px; background:var(--line); margin:4px auto 10px; }
+  .lb .m img,.lb .m video{ max-width:100%; max-height:52vh; border-radius:16px; display:block; margin:0 auto; }
+  .lb .sheet-meta{ padding:14px 2px 2px; }
+  .lb .shandle{ font-weight:700; font-size:14px; color:var(--accent); margin-bottom:6px; }
+  .lb .t{ color:var(--fg); font-size:14px; line-height:1.5; }
+  .lb .row{ display:flex; gap:9px; margin-top:16px; justify-content:flex-end; }
+  .lb .x{ position:absolute; top:12px; right:16px; font-size:22px; color:var(--muted); cursor:pointer; z-index:2; }
+  .lb .ob{ width:46px; height:46px; font-size:19px; background:var(--bg); border:1px solid var(--line); color:var(--fg); }
+  .lb .ob.save.saved{ background:var(--accent); border-color:transparent; color:#fff; }
+
+  .fab-clear{ position:fixed; right:16px; bottom:calc(88px + env(safe-area-inset-bottom)); z-index:32; width:54px; height:54px; border-radius:50%; border:0; cursor:pointer; background:#ef4444; color:#fff; display:none; align-items:center; justify-content:center; box-shadow:0 12px 28px rgba(239,68,68,.42); }
+  .fab-clear.on{ display:flex; } .fab-clear:active{ transform:scale(.92); }
+  .modal{ position:fixed; inset:0; z-index:60; background:rgba(8,6,16,.62); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); display:none; align-items:center; justify-content:center; padding:24px; }
+  .modal.on{ display:flex; }
+  .modal-card{ width:100%; max-width:360px; background:var(--surface); color:var(--fg); border-radius:22px; padding:24px; box-shadow:0 24px 60px rgba(0,0,0,.45); transform:scale(.9); transition:transform .22s cubic-bezier(.2,.8,.2,1); }
+  .modal.on .modal-card{ transform:scale(1); }
+  .modal-icon{ width:50px; height:50px; border-radius:16px; display:flex; align-items:center; justify-content:center; margin-bottom:16px; }
+  .modal-icon.danger{ background:rgba(239,68,68,.14); color:#ef4444; }
+  .modal-icon.accent{ background:var(--bg); border:1px solid var(--line); color:var(--accent); }
+  .modal-title{ font-family:'Baloo 2','Space Grotesk',sans-serif; font-weight:800; font-size:20px; margin-bottom:8px; }
+  .modal-msg{ color:var(--muted); font-size:14px; line-height:1.5; margin-bottom:22px; }
+  .modal-acts{ display:flex; gap:10px; }
+  .modal-acts .mbtn{ flex:1; text-align:center; }
+  .mbtn{ border:0; border-radius:12px; padding:11px 20px; font-weight:600; font-size:14px; cursor:pointer; font-family:inherit; }
+  .mbtn.cancel{ background:var(--bg); color:var(--fg); border:1px solid var(--line); }
+  .mbtn.danger{ background:#ef4444; color:#fff; } .mbtn.primary{ background:var(--accent); color:#fff; } .mbtn:active{ transform:scale(.96); }
+
+  .loader{ padding:30px; text-align:center; color:var(--muted); font-size:14px; grid-column:1/-1; }
+  .spin{ width:22px; height:22px; border:2px solid rgba(124,108,246,.25); border-top-color:var(--accent);
+    border-radius:50%; animation:r .8s linear infinite; display:inline-block; vertical-align:middle; }
+  @keyframes r{ to{ transform:rotate(360deg);} }
+  .empty{ padding:80px 30px; text-align:center; color:var(--muted); line-height:1.7; grid-column:1/-1; }
+  .err b{ color:var(--accent); cursor:pointer; }
+  .toast{ position:fixed; left:50%; bottom:130px; transform:translateX(-50%) translateY(10px); z-index:50;
+    background:rgba(18,14,28,.96); color:#fff; padding:10px 18px; border-radius:999px; font-size:13px; font-weight:500;
+    opacity:0; pointer-events:none; transition:.25s; } .toast.on{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+  /* bottom pill nav */
+  .navwrap{ position:fixed; left:0; right:0; bottom:calc(16px + env(safe-area-inset-bottom)); z-index:30;
+    display:flex; justify-content:center; pointer-events:none; }
+  .pill{ pointer-events:auto; display:flex; align-items:center; gap:6px; background:var(--surface);
+    border:1px solid var(--line); border-radius:999px; padding:7px; box-shadow:0 14px 38px rgba(20,12,50,.26); }
+  .pill button{ width:50px; height:50px; border-radius:50%; border:0; background:none; cursor:pointer;
+    font-size:21px; display:flex; align-items:center; justify-content:center; color:var(--muted); transition:.2s; }
+  .pill button.on{ background:var(--accent); color:#fff; }
+  .pill .uni-switch{ color:var(--accent); }
+  .pill .uni-switch::before{ content:""; position:absolute; left:-4px; height:24px; width:1px; background:var(--line); }
+  .pill{ position:relative; }
+</style>
+</head>
+<body class="dark">
+<div class="top"><span class="logo"></span><span class="mark">OTAKU</span></div>
+<button class="theme" id="theme" title="Theme"></button>
+<div class="wrap" id="wrap"></div>
+
+<div class="lb" id="lb"><div class="sheet"><div class="grab"></div><span class="x" onclick="closeLb()">✕</span><div class="m" id="lbm"></div><div class="sheet-meta"><div class="shandle" id="lbh"></div><div class="t" id="lbt"></div></div><div class="row obtns" id="lbr"></div></div></div>
+<div class="modal" id="installModal"><div class="modal-card"><div class="modal-icon accent" id="installIcon"></div><div class="modal-title">Install OTAKU</div><div class="modal-msg" id="installMsg"></div><div class="modal-acts"><button class="mbtn cancel" id="installX">Not now</button><button class="mbtn primary" id="installBtn">Install</button></div></div></div>
+<div class="toast" id="toast"></div>
+<button class="fab-clear" id="clearSaved" title="Clear all saved"></button>
+<div class="modal" id="confirm"><div class="modal-card"><div class="modal-icon danger" id="confirmIcon"></div><div class="modal-title" id="confirmTitle"></div><div class="modal-msg" id="confirmMsg"></div><div class="modal-acts"><button class="mbtn cancel" id="confirmCancel">Cancel</button><button class="mbtn danger" id="confirmOk">Confirm</button></div></div></div>
+
+<div class="navwrap"><div class="pill" id="pill">
+  <button data-m="home" class="on" title="Home"></button>
+  <button data-m="explore" title="Explore"></button>
+  <button data-m="saved" title="Saved"></button>
+  <button id="uniSwitch" class="uni-switch" title="Switch Anime / Gaming"></button>
+</div></div>
+
+<script>
+// ─── config ──────────────────────────────────────────────────────────────
+const INSTANCE='https://lemmy.world';
+const ANIME=['anime_art@ani.social','anime@ani.social','manga@ani.social','animemes@ani.social','goodanimemes@lemmy.world','animemes@lemmy.world','anime@lemmy.world','awwnime@lemmy.world','anime@lemmy.ml'];
+const GAMING=['gaming@lemmy.world','games@lemmy.world','gamingmemes@lemmy.world','retrogaming@lemmy.world','patientgamers@lemmy.world','pcgaming@lemmy.world','gaming@lemmy.ml','games@lemmy.ml','gaming@sopuli.xyz','valorant@lemmy.world','counterstrike@lemmy.world','globaloffensive@lemmy.world','leagueoflegends@lemmy.world','minecraft@lemmy.world','pokemon@lemmy.world','eldenring@lemmy.world'];
+const SORTS=['Active','Hot','TopDay','TopWeek','TopMonth','New'];
+let universe='anime', SOURCES=ANIME;
+const TR_ANIME=['One Piece','Jujutsu Kaisen','Demon Slayer','Naruto','Chainsaw Man','Frieren','Solo Leveling','Gojo'];
+const TR_GAMING=['Valorant','Counter-Strike','CS2','League of Legends','Elden Ring','Minecraft','Zelda','Cyberpunk','Pokemon','GTA'];
+let TRENDING=TR_ANIME;
+// ─────────────────────────────────────────────────────────────────────────
+
+const LS={ get:(k,d)=>{try{return JSON.parse(localStorage.getItem('otaku_'+k))??d}catch(e){return d}},
+          set:(k,v)=>localStorage.setItem('otaku_'+k,JSON.stringify(v)) };
+let saved=LS.get('saved',[]), weights=LS.get('weights',{});
+const bump=c=>{ weights[c]=(weights[c]||1)+1; LS.set('weights',weights); };
+const SVG={
+ home:'<path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/>',
+ search:'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+ bookmark:'<path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>',
+ download:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/>',
+ send:'<path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/>',
+ moon:'<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/>',
+ sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+ heart:'<path d="M19 5a5 5 0 0 0-7 0l-0 0-0-0a5 5 0 0 0-7 7l7 7 7-7a5 5 0 0 0 0-7z"/>',
+ volOff:'<path d="M11 5 6 9H2v6h4l5 4z"/><line x1="22" x2="16" y1="9" y2="15"/><line x1="16" x2="22" y1="9" y2="15"/>',
+ volOn:'<path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/>',
+ play:'<polygon points="6 3 20 12 6 21 6 3"/>',
+ swap:'<path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/>',
+ trash:'<path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>'
+};
+const ic=(n,s=22)=>`<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${SVG[n]}</svg>`;
+
+// theme
+(function(){ const t=LS.get('theme','dark'); document.body.classList.toggle('dark',t==='dark');
+  document.getElementById('theme').innerHTML=ic(t==='dark'?'moon':'sun'); })();
+document.getElementById('theme').onclick=function(){ const dark=document.body.classList.toggle('dark');
+  this.innerHTML=ic(dark?'moon':'sun'); LS.set('theme',dark?'dark':'light');
+  document.querySelector('meta[name=theme-color]').content=dark?'#09080e':'#edecf7'; };
+
+const wrap=document.getElementById('wrap');
+let mode='home', loading=false, query='', vObs=[];
+let pageOf={}, dry=new Set(), seen=new Set(), sortIdx=0, si=0, sPage=1, sDone=false, container=wrap;
+
+function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('on'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('on'),1700); }
+function share(url,title){ if(navigator.share){ navigator.share({title:'OTAKU',text:title||'🌸',url}).catch(()=>{}); } else window.open('https://wa.me/?text='+encodeURIComponent((title?title+' ':'')+url),'_blank'); }
+async function download(url,title,isVideo){
+  const base=((title||'otaku-wallpaper').replace(/[^\w]+/g,'_').slice(0,40))||'otaku';
+  const save=(blob,ext)=>{ const u=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=u; a.download=base+'.'+ext; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),6000); };
+  if(isVideo){ toast('Downloading…'); try{ const r=await fetch(url,{mode:'cors'}); const b=await r.blob(); save(b,(b.type.split('/')[1]||'mp4')); toast('Saved ✓'); }catch(e){ window.open(url,'_blank'); toast('Opened — long-press to save'); } return; }
+  toast('Preparing HD…');
+  try{
+    const img=new Image(); img.crossOrigin='anonymous';
+    await new Promise((res,rej)=>{ img.onload=res; img.onerror=rej; img.src=url; });
+    const cv=document.createElement('canvas'); cv.width=img.naturalWidth; cv.height=img.naturalHeight;
+    cv.getContext('2d').drawImage(img,0,0);
+    const blob=await new Promise(r=>cv.toBlob(r,'image/jpeg',0.95)); if(!blob) throw 0;
+    save(blob,'jpg'); toast('Saved HD JPEG ✓ ('+img.naturalWidth+'×'+img.naturalHeight+')');
+  }catch(e){
+    try{ const r=await fetch(url,{mode:'cors'}); const b=await r.blob(); save(b,'jpg'); toast('Saved ✓'); }
+    catch(_){ window.open(url,'_blank'); toast('Opened — long-press to save'); }
+  }
+}
+
+const isImg=u=>u&&/\.(jpg|jpeg|png|webp|gif)/i.test(u);
+const isVid=u=>u&&/\.(mp4|webm|mov|m4v)/i.test(u);
+const imageOf=p=>p.thumbnail_url||(isImg(p.url)?p.url:null);
+const videoOf=p=>isVid(p.url)?p.url:(isVid(p.embed_video_url)?p.embed_video_url:null);
+const shuffle=a=>{ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
+const itemOf=(p,c)=>{ const vid=videoOf(p), img=imageOf(p); const media=vid||img; if(!media) return null;
+  const ext=p.url&&!isImg(p.url)&&!isVid(p.url);
+  const full=vid?media:(isImg(p.url)?p.url:img);
+  return {id:p.ap_id||String(p.id),media,img:img||'',full,vid:!!vid,title:p.name||'',handle:c?c.name:'anime',external:ext,link:ext?p.url:`${INSTANCE}/post/${p.id}`}; };
+const isSaved=id=>saved.some(s=>s.id===id);
+function toggleSave(it){ const i=saved.findIndex(s=>s.id===it.id); if(i>=0) saved.splice(i,1); else{ saved.push(it); bump(it.handle);} LS.set('saved',saved); return isSaved(it.id); }
+
+// immersive card
+function card(it){
+  const el=document.createElement('article'); el.className='post';
+  const inner = it.vid
+    ? `<video class="vid" referrerpolicy="no-referrer" muted loop playsinline preload="metadata" poster="${it.img}" src="${it.media}"></video><div class="vbadge">${ic('volOff',16)}</div>`
+    : `<img referrerpolicy="no-referrer" loading="lazy" src="${it.media}" onload="this.classList.add('on')">`;
+  el.innerHTML=`<div class="media">${inner}<div class="burst">${ic('bookmark',88)}</div>
+      <div class="overlay"><div class="cap">${(it.title||'').replace(/</g,'&lt;')}</div>
+        <div class="obtns">
+          <div class="ob dl" title="Download">${ic('download')}</div>
+          <div class="ob sd" title="Send">${ic('send')}</div>
+          <div class="ob save${isSaved(it.id)?' saved':''}" title="Save">${ic('bookmark')}</div>
+        </div></div></div>`;
+  el.querySelector('.dl').onclick=e=>{ e.stopPropagation(); download(it.full,it.title,it.vid); };
+  el.querySelector('.sd').onclick=e=>{ e.stopPropagation(); share(it.external?it.link:it.media,it.title); };
+  const sv=el.querySelector('.save');
+  sv.onclick=e=>{ e.stopPropagation(); toggleSave(it); sv.classList.toggle('saved',isSaved(it.id)); toast(isSaved(it.id)?'Saved 🔖':'Removed'); };
+  const burst=el.querySelector('.burst'), med=el.querySelector('.media'); let last=0, tapT=null;
+  med.addEventListener('click',e=>{ if(e.target.closest('.ob')||e.target.closest('.vbadge')) return; const now=e.timeStamp;
+    if(now-last<300){ clearTimeout(tapT); if(it.vid) e.preventDefault(); if(!isSaved(it.id)){ toggleSave(it); sv.classList.add('saved'); }
+      burst.classList.remove('go'); void burst.offsetWidth; burst.classList.add('go'); }
+    else { tapT=setTimeout(()=>openLb(it),280); } last=now; });
+  const v=el.querySelector('.vid');
+  if(v){ v.addEventListener('loadeddata',()=>v.classList.add('on'));
+    const b=el.querySelector('.vbadge'); b.onclick=(ev)=>{ ev.stopPropagation(); v.muted=!v.muted; b.innerHTML=ic(v.muted?'volOff':'volOn',16); };
+    const vo=new IntersectionObserver(es=>es.forEach(en=> en.isIntersecting? v.play().catch(()=>{}):v.pause()),{threshold:.6}); vo.observe(v); vObs.push(vo); }
+  return el;
+}
+function tile(it){ const el=document.createElement('div'); el.className='tile';
+  el.innerHTML=`<img referrerpolicy="no-referrer" loading="lazy" src="${it.img||it.media}" onload="this.classList.add('on')">${it.vid?('<span class="pv">'+ic('play',12)+'</span>'):''}`;
+  el.onclick=()=>openLb(it); return el; }
+
+const lb=document.getElementById('lb');
+function openLb(it){
+  document.getElementById('lbm').innerHTML = it.vid
+    ? `<video src="${it.media}" controls autoplay loop playsinline style="max-width:100%;max-height:66vh;border-radius:18px"></video>`
+    : `<img referrerpolicy="no-referrer" src="${it.full}">`;
+  document.getElementById('lbh').textContent=it.handle||'';
+  document.getElementById('lbt').textContent=it.title||'';
+  const r=document.getElementById('lbr');
+  r.innerHTML=`<div class="ob dl">${ic('download')}</div><div class="ob sd">${ic('send')}</div><div class="ob save${isSaved(it.id)?' saved':''}">${ic('bookmark')}</div>`;
+  r.querySelector('.dl').onclick=()=>download(it.full,it.title,it.vid);
+  r.querySelector('.sd').onclick=()=>share(it.external?it.link:it.media,it.title);
+  const sv=r.querySelector('.save'); sv.onclick=()=>{ toggleSave(it); sv.classList.toggle('saved',isSaved(it.id)); toast(isSaved(it.id)?'Saved 🔖':'Removed'); };
+  lb.classList.add('on');
+}
+function closeLb(){ lb.classList.remove('on'); document.getElementById('lbm').innerHTML=''; }
+lb.addEventListener('click',e=>{ if(e.target===lb) closeLb(); });
+
+// loading
+const sentinel=document.createElement('div');
+function spinner(){ sentinel.className='loader'; sentinel.innerHTML='<span class="spin"></span>'; }
+function sentinelNear(){ if(!sentinel.isConnected) return false; return sentinel.getBoundingClientRect().top < innerHeight+1100; }
+const keyOf=c=>c+'|'+SORTS[sortIdx];
+function nextSource(){ for(let k=0;k<SOURCES.length;k++){ const cand=SOURCES[(si+k)%SOURCES.length]; if(!dry.has(keyOf(cand))){ si=(si+k+1)%SOURCES.length; return cand; } } return null; }
+async function grab(url){ try{ return (await (await fetch(url,{cache:'no-store'})).json()).posts||[]; }catch(e){ return null; } }
+async function loadMore(){
+  if(loading||mode==='saved') return; loading=true;
+  try{
+    if(mode==='home'){
+      let c=nextSource();
+      if(!c){ sortIdx++; if(sortIdx>=SORTS.length){ sortIdx=0; seen.clear(); } dry.clear(); loading=false; return loadMore(); }
+      const sort=SORTS[sortIdx], key=keyOf(c), pg=pageOf[key]=(pageOf[key]||0)+1;
+      const posts=await grab(`${INSTANCE}/api/v3/post/list?community_name=${c}&sort=${sort}&limit=30&page=${pg}&t=${Date.now()}`);
+      if(!posts||!posts.length){ dry.add(key); loading=false; return loadMore(); }
+      shuffle(posts); let added=0;
+      for(const {post:p,community:cm} of posts){ const it=itemOf(p,cm); if(!it||seen.has(it.id)) continue; seen.add(it.id); container.insertBefore(card(it),sentinel); added++; }
+      if(!added){ dry.add(key); loading=false; return loadMore(); }
+    } else {
+      if(sDone){ loading=false; return; }
+      let posts;
+      if(query){ posts=await grab(`${INSTANCE}/api/v3/search?q=${encodeURIComponent(query)}&type_=Posts&listing_type=All&sort=TopAll&limit=30&page=${sPage}&t=${Date.now()}`); sPage++;
+        if(!posts||!posts.length){ sDone=true; sentinel.textContent='End of results'; loading=false; return; } }
+      else { const c=SOURCES[Math.floor(Math.random()*SOURCES.length)]; const key='x|'+c; const pg=pageOf[key]=(pageOf[key]||0)+1;
+        posts=await grab(`${INSTANCE}/api/v3/post/list?community_name=${c}&sort=TopMonth&limit=30&page=${pg}&t=${Date.now()}`);
+        if(!posts||!posts.length){ loading=false; return loadMore(); } }
+      shuffle(posts); let added=0;
+      for(const {post:p,community:cm} of posts){ const it=itemOf(p,cm); if(!it||seen.has(it.id)) continue; seen.add(it.id); container.insertBefore(tile(it),sentinel); added++; }
+      if(!added){ loading=false; return loadMore(); }
+    }
+  }catch(e){ sentinel.classList.add('err'); sentinel.innerHTML=`Hiccup (${e.message}) — <b onclick="retry()">retry</b>`;
+    window.retry=()=>{ spinner(); loading=false; loadMore(); }; return; }
+  loading=false; if(sentinelNear()) loadMore();
+}
+const io=new IntersectionObserver(es=>{ if(es[0].isIntersecting) loadMore(); },{rootMargin:'1100px'});
+
+// views
+function clearAll(){ vObs.forEach(o=>o.disconnect()); vObs=[]; io.disconnect(); wrap.innerHTML=''; }
+function resetState(){ pageOf={}; dry=new Set(); seen=new Set(); sortIdx=0; si=0; sPage=1; sDone=false; }
+function showHome(){ clearAll(); resetState(); document.body.classList.remove('explore'); document.getElementById('clearSaved').classList.remove('on'); container=wrap; spinner(); wrap.appendChild(sentinel); io.observe(sentinel); window.scrollTo(0,0); loadMore(); }
+function showExplore(){ clearAll(); resetState(); document.body.classList.add('explore'); document.getElementById('clearSaved').classList.remove('on');
+  const hd=document.createElement('div'); hd.className='exhead';
+  hd.innerHTML='<div class="box"><span class="mg">'+ic('search',18)+'</span><input id="q" placeholder="Search anime, games, characters, memes…" autocomplete="off"></div><div class="chips"></div>';
+  wrap.appendChild(hd);
+  const ch=hd.querySelector('.chips');
+  TRENDING.forEach(t=>{ const c=document.createElement('div'); c.className='chip'; c.textContent=t;
+    c.onclick=()=>{ document.getElementById('q').value=t; [...ch.children].forEach(x=>x.classList.remove('on')); c.classList.add('on'); runSearch(t); }; ch.appendChild(c); });
+  const g=document.createElement('div'); g.className='grid'; wrap.appendChild(g); container=g;
+  const input=hd.querySelector('#q'); input.value=query;
+  input.addEventListener('keydown',e=>{ if(e.key==='Enter'){ input.blur(); [...ch.children].forEach(x=>x.classList.remove('on')); runSearch(input.value.trim()); } });
+  spinner(); g.appendChild(sentinel); io.observe(sentinel); loadMore();
+}
+function runSearch(q){ query=q; resetState(); const g=container; [...g.querySelectorAll('.tile')].forEach(t=>t.remove()); spinner(); g.appendChild(sentinel); loading=false; loadMore(); }
+function showSaved(){ clearAll(); document.body.classList.remove('explore'); document.getElementById('clearSaved').classList.toggle('on',saved.length>0); const g=document.createElement('div'); g.className='grid'; wrap.appendChild(g); container=g;
+  if(!saved.length){ g.innerHTML='<div class="empty">Nothing saved yet 🔖<br>Save art & memes you love.<br><br>Stored only on this device — fully private.</div>'; return; }
+  for(const it of [...saved].reverse()) g.appendChild(tile(it)); }
+
+document.getElementById('pill').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b||!b.dataset.m) return;
+  [...e.currentTarget.children].forEach(x=>x.classList.remove('on')); b.classList.add('on');
+  mode=b.dataset.m; loading=false; query='';
+  if(mode==='home') showHome(); else if(mode==='explore') showExplore(); else showSaved(); });
+
+// brand pill shrink on scroll
+const topEl=document.querySelector('.top');
+window.addEventListener('scroll',()=>{ topEl.classList.toggle('small', window.scrollY>40); },{passive:true});
+
+
+document.querySelectorAll(".pill button[data-m]").forEach(b=>b.innerHTML=ic({home:"home",explore:"search",saved:"bookmark"}[b.dataset.m]));
+document.getElementById("uniSwitch").innerHTML=ic("swap");
+document.getElementById("uniSwitch").onclick=()=>{ applyUniverse(universe==="anime"?"gaming":"anime"); loading=false; if(mode==="home") showHome(); else if(mode==="explore") showExplore(); else showSaved(); toast(universe==="anime"?"Anime mode":"Gaming mode"); };
+const SAKURA="<svg class=\"logo\" viewBox=\"0 0 24 24\" width=\"21\" height=\"21\" fill=\"none\" stroke=\"var(--accent)\" stroke-width=\"1.7\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 12 C8.8 9.6 8.8 5.6 11 4 L12 5.8 L13 4 C15.2 5.6 15.2 9.6 12 12 Z\" transform=\"rotate(0 12 12)\"/><path d=\"M12 12 C8.8 9.6 8.8 5.6 11 4 L12 5.8 L13 4 C15.2 5.6 15.2 9.6 12 12 Z\" transform=\"rotate(72 12 12)\"/><path d=\"M12 12 C8.8 9.6 8.8 5.6 11 4 L12 5.8 L13 4 C15.2 5.6 15.2 9.6 12 12 Z\" transform=\"rotate(144 12 12)\"/><path d=\"M12 12 C8.8 9.6 8.8 5.6 11 4 L12 5.8 L13 4 C15.2 5.6 15.2 9.6 12 12 Z\" transform=\"rotate(216 12 12)\"/><path d=\"M12 12 C8.8 9.6 8.8 5.6 11 4 L12 5.8 L13 4 C15.2 5.6 15.2 9.6 12 12 Z\" transform=\"rotate(288 12 12)\"/><circle cx=\"12\" cy=\"12\" r=\"1.5\" fill=\"#ffd24d\" stroke=\"none\"/></svg>";
+const GAMEPAD="<svg class=\"logo\" viewBox=\"0 0 24 24\" width=\"21\" height=\"21\" fill=\"none\" stroke=\"var(--accent)\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><line x1=\"6\" x2=\"10\" y1=\"12\" y2=\"12\"/><line x1=\"8\" x2=\"8\" y1=\"10\" y2=\"14\"/><line x1=\"15\" x2=\"15.01\" y1=\"13\" y2=\"13\"/><line x1=\"18\" x2=\"18.01\" y1=\"11\" y2=\"11\"/><rect width=\"20\" height=\"12\" x=\"2\" y=\"6\" rx=\"2\"/></svg>";
+function applyUniverse(u){ universe=u; LS.set("universe",u); document.body.classList.toggle("gaming",u==="gaming");
+  SOURCES=u==="anime"?ANIME:GAMING; TRENDING=u==="anime"?TR_ANIME:TR_GAMING;
+  const lg=document.querySelector(".top .logo"); if(lg) lg.outerHTML=(u==="anime"?SAKURA:GAMEPAD);
+}
+applyUniverse(LS.get("universe","anime"));
+let deferredPrompt=null; const installEl=document.getElementById("installModal"), installMsg=document.getElementById("installMsg"), installBtn=document.getElementById("installBtn"), installX=document.getElementById("installX"); document.getElementById("installIcon").innerHTML=ic("download",24);
+function showInstall(msg,withBtn){ installMsg.innerHTML=msg; installBtn.style.display=withBtn?"":"none"; installEl.classList.add("on"); }
+addEventListener("beforeinstallprompt",e=>{ e.preventDefault(); deferredPrompt=e; if(!LS.get("installDismiss",false)) showInstall("Add OTAKU to your home screen for a full-screen, app-like experience.",true); });
+installBtn.onclick=async()=>{ installEl.classList.remove("on"); if(deferredPrompt){ deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt=null; } };
+installX.onclick=()=>{ installEl.classList.remove("on"); LS.set("installDismiss",true); };
+installEl.onclick=e=>{ if(e.target===installEl) installEl.classList.remove("on"); };
+(function(){ const standalone=matchMedia("(display-mode: standalone)").matches||navigator.standalone; const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);
+  if(ios && !standalone && !LS.get("installDismiss",false)){ installX.textContent="Got it"; showInstall("Tap <b>Share</b> then <b>Add to Home Screen</b> to install OTAKU.",false); } })();
+function askConfirm(title,msg,okLabel){ return new Promise(res=>{ const m=document.getElementById('confirm'); document.getElementById('confirmIcon').innerHTML=ic('trash',24);
+  document.getElementById('confirmTitle').textContent=title; document.getElementById('confirmMsg').textContent=msg;
+  const ok=document.getElementById('confirmOk'), cn=document.getElementById('confirmCancel'); ok.textContent=okLabel||'Confirm';
+  const close=v=>{ m.classList.remove('on'); ok.onclick=cn.onclick=m.onclick=null; res(v); };
+  ok.onclick=()=>close(true); cn.onclick=()=>close(false); m.onclick=e=>{ if(e.target===m) close(false); }; m.classList.add('on'); }); }
+document.getElementById('clearSaved').innerHTML=ic('trash',23);
+document.getElementById('clearSaved').onclick=async()=>{ if(!saved.length) return; if(await askConfirm('Clear saved?','Remove all '+saved.length+' saved items? This can\u2019t be undone.','Clear')){ saved=[]; LS.set('saved',saved); showSaved(); toast('Saved cleared'); } };
+showHome();
+</script>
+<script>if("serviceWorker" in navigator){addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));}</script>
+</body>
+</html>

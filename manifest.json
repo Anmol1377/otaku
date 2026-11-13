@@ -1,0 +1,17 @@
+{
+  "name": "OTAKU — Anime & Gaming Wallpapers, Art & Memes",
+  "short_name": "OTAKU",
+  "description": "Endless anime & gaming wallpapers, art and memes. Save in HD, send to friends. No account, fully private.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#09080e",
+  "theme_color": "#09080e",
+  "categories": ["entertainment", "lifestyle", "photo"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
