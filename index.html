@@ -181,7 +181,7 @@
 // ─── config ──────────────────────────────────────────────────────────────
 const INSTANCE='https://lemmy.world';
 const ANIME=['anime_art@ani.social','anime@ani.social','manga@ani.social','animemes@ani.social','goodanimemes@lemmy.world','animemes@lemmy.world','anime@lemmy.world','awwnime@lemmy.world','anime@lemmy.ml'];
-const GAMING=['gaming@lemmy.world','games@lemmy.world','gamingmemes@lemmy.world','retrogaming@lemmy.world','patientgamers@lemmy.world','pcgaming@lemmy.world','gaming@lemmy.ml','games@lemmy.ml','gaming@sopuli.xyz','valorant@lemmy.world','counterstrike@lemmy.world','globaloffensive@lemmy.world','leagueoflegends@lemmy.world','minecraft@lemmy.world','pokemon@lemmy.world','eldenring@lemmy.world'];
+const GAMING=['gaming@lemmy.world','games@lemmy.world','gamingmemes@lemmy.world','retrogaming@lemmy.world','patientgamers@lemmy.world','pcgaming@lemmy.world','valorant@lemmy.world','leagueoflegends@lemmy.world','minecraft@lemmy.world','pokemon@lemmy.world','eldenring@lemmy.world'];
 const SORTS=['Active','Hot','TopDay','TopWeek','TopMonth','New'];
 let universe='anime', SOURCES=ANIME;
 const TR_ANIME=['One Piece','Jujutsu Kaisen','Demon Slayer','Naruto','Chainsaw Man','Frieren','Solo Leveling','Gojo'];
@@ -308,7 +308,15 @@ function spinner(){ sentinel.className='loader'; sentinel.innerHTML='<span class
 function sentinelNear(){ if(!sentinel.isConnected) return false; return sentinel.getBoundingClientRect().top < innerHeight+1100; }
 const keyOf=c=>c+'|'+SORTS[sortIdx];
 function nextSource(){ for(let k=0;k<SOURCES.length;k++){ const cand=SOURCES[(si+k)%SOURCES.length]; if(!dry.has(keyOf(cand))){ si=(si+k+1)%SOURCES.length; return cand; } } return null; }
-async function grab(url){ try{ return (await (await fetch(url,{cache:'no-store'})).json()).posts||[]; }catch(e){ return null; } }
+let _lastReq=0;
+async function grab(url){
+  const gap=Date.now()-_lastReq; if(gap<340) await new Promise(r=>setTimeout(r,340-gap)); _lastReq=Date.now();
+  try{ const r=await fetch(url,{cache:'no-store'});
+    if(r.status===503||r.status===429){ await new Promise(r=>setTimeout(r,900)); return null; }
+    if(!r.ok) return null;
+    return (await r.json()).posts||[];
+  }catch(e){ return null; }
+}
 async function loadMore(){
   if(loading||mode==='saved') return; loading=true;
   try{
